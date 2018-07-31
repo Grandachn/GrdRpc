@@ -13,14 +13,21 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.*;
+
 public class RpcClient extends SimpleChannelInboundHandler<RpcResponse> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RpcClient.class);
+
+
+    final ExecutorService exec = Executors.newFixedThreadPool(1);
 
     private String host;
     private int port;
 
     private RpcResponse response;
+
+    private RpcRequest request;
 
     private final Object obj = new Object();
 
@@ -44,7 +51,33 @@ public class RpcClient extends SimpleChannelInboundHandler<RpcResponse> {
         ctx.close();
     }
 
-    public RpcResponse send(RpcRequest request) throws Exception {
+    public RpcResponse send(RpcRequest request) {
+        this.request = request;
+        try {
+            Future<String> future1 = exec.submit(call);
+            //任务处理超时时间设为 1 秒
+            String obj = future1.get(1000 * 1, TimeUnit.MILLISECONDS);
+
+            return response;
+        } catch (TimeoutException e){
+            LOGGER.info("远程调用超时");
+        }catch (InterruptedException | ExecutionException e){
+            LOGGER.info("远程调用出錯");
+        }
+        return null;
+    }
+
+    private Callable<String> call = new Callable<String>() {
+        @Override
+        public String call() throws Exception {
+            //开始执行耗时操作
+            rpcSend(request);
+            return "线程执行完成.";
+        }
+    };
+
+
+    private void rpcSend(RpcRequest request) throws Exception{
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap bootstrap = new Bootstrap();
@@ -53,9 +86,12 @@ public class RpcClient extends SimpleChannelInboundHandler<RpcResponse> {
                         @Override
                         public void initChannel(SocketChannel channel) throws Exception {
                             channel.pipeline()
-                                    .addLast(new RpcEncoder(RpcRequest.class)) // 将 RPC 请求进行编码（为了发送请求）
-                                    .addLast(new RpcDecoder(RpcResponse.class)) // 将 RPC 响应进行解码（为了处理响应）
-                                    .addLast(RpcClient.this); // 使用 RpcClient 发送 RPC 请求
+                                    // 将 RPC 请求进行编码（为了发送请求）
+                                    .addLast(new RpcEncoder(RpcRequest.class))
+                                    // 将 RPC 响应进行解码（为了处理响应）
+                                    .addLast(new RpcDecoder(RpcResponse.class))
+                                    // 使用 RpcClient 发送 RPC 请求
+                                    .addLast(RpcClient.this);
                         }
                     })
                     .option(ChannelOption.SO_KEEPALIVE, true);
@@ -64,14 +100,15 @@ public class RpcClient extends SimpleChannelInboundHandler<RpcResponse> {
             future.channel().writeAndFlush(request).sync();
 
             synchronized (obj) {
-                obj.wait(); // 未收到响应，使线程等待
+                obj.wait(); //挂起
             }
 
             if (response != null) {
                 future.channel().closeFuture().sync();
             }
-            return response;
-        } finally {
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
             group.shutdownGracefully();
         }
     }

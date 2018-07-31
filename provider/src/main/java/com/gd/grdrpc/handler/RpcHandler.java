@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cglib.reflect.FastClass;
 import org.springframework.cglib.reflect.FastMethod;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 
 public class RpcHandler extends SimpleChannelInboundHandler<RpcRequest> {
@@ -44,9 +45,9 @@ public class RpcHandler extends SimpleChannelInboundHandler<RpcRequest> {
         Class<?>[] parameterTypes = request.getParameterTypes();
         Object[] parameters = request.getParameters();
 
-        /*Method method = serviceClass.getMethod(methodName, parameterTypes);
-        method.setAccessible(true);
-        return method.invoke(serviceBean, parameters);*/
+//        Method method = serviceClass.getMethod(methodName, parameterTypes);
+//        method.setAccessible(true);
+//        return method.invoke(serviceBean, parameters);
 
         //cglib比上面的java反射性能更好
         FastClass serviceFastClass = FastClass.create(serviceClass);

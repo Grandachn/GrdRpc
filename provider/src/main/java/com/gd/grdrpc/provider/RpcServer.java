@@ -8,6 +8,7 @@ import com.gd.grdrpc.coder.RpcDecoder;
 import com.gd.grdrpc.coder.RpcEncoder;
 import com.gd.grdrpc.handler.RpcHandler;
 import com.gd.grdrpc.registry.ServiceRegistry;
+import com.gd.grdrpc.utils.NetworkUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -20,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -37,9 +37,6 @@ import java.util.Map;
 public class RpcServer implements ApplicationContextAware, InitializingBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RpcServer.class);
-
-    @Value("${provider.host}")
-    private String host;
 
     @Value("${provider.port}")
     private int port;
@@ -86,13 +83,13 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            ChannelFuture future = bootstrap.bind(host, port).sync();
-            LOGGER.info("server started on port {}",  port);
+            ChannelFuture future = bootstrap.bind(NetworkUtil.getLocalHostLANAddress().getHostAddress(), port).sync();
+            LOGGER.info("server started on {}，{}",NetworkUtil.getLocalHostLANAddress().getHostAddress() , port);
 
             // 注册服务地址
             if (serviceRegistry != null) {
-                serviceRegistry.register(host + ":" + port);
-                LOGGER.info("-----------注冊服務");
+                serviceRegistry.register(NetworkUtil.getLocalHostLANAddress().getHostAddress() + ":" + port);
+                LOGGER.info("服务成功注册到zookeeper");
             }
 
             future.channel().closeFuture().sync();
