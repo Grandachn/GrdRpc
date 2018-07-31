@@ -9,7 +9,8 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>provider</module>
-        <module>consumer</module>
+        <module>common</module>
+        <module>client</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -82,6 +83,14 @@
             <artifactId>protostuff-runtime</artifactId>
             <version>1.0.8</version>
         </dependency>
+
+        <!-- ZooKeeper -->
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.4.6</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-test</artifactId>

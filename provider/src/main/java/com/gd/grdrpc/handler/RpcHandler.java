@@ -48,6 +48,7 @@ public class RpcHandler extends SimpleChannelInboundHandler<RpcRequest> {
         method.setAccessible(true);
         return method.invoke(serviceBean, parameters);*/
 
+        //cglib比上面的java反射性能更好
         FastClass serviceFastClass = FastClass.create(serviceClass);
         FastMethod serviceFastMethod = serviceFastClass.getMethod(methodName, parameterTypes);
         return serviceFastMethod.invoke(serviceBean, parameters);

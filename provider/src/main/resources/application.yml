@@ -1,0 +1,13 @@
+server:
+  port: 8088
+  servlet:
+    path:
+
+provider:
+  host: 127.0.0.1
+  port: 8888
+  name: gd-Cal
+
+zookeeper:
+  address: 127.0.0.1:2181
+
