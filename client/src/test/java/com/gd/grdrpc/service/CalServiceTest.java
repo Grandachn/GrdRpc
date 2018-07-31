@@ -27,7 +27,7 @@ public class CalServiceTest {
 //        RpcProxy rpcProxy = new RpcProxy("gd-Cal",serviceDiscovery);
         long start = System.currentTimeMillis();
         CalService calService = rpcProxy.create(CalService.class);
-        for (int i = 0;i < 10; i++){
+        for (int i = 0;i < 10000; i++){
 
             Object result = calService.add(1,2);
             if (result.equals(new Integer(0))){

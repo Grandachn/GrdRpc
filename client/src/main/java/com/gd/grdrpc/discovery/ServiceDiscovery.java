@@ -10,10 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +29,7 @@ public class ServiceDiscovery {
 
     private volatile List<String> dataList = new ArrayList<>();
 
-    private Map<String, List<String>> serverMap = new HashMap<>();
+    private Map<String, Set<String>> serverMap = new HashMap<>();
 
     private Map<String, Integer> useCount = new ConcurrentHashMap<>();
 
@@ -46,8 +43,9 @@ public class ServiceDiscovery {
 
     public String discover(String serveiceName) {
         String data = "";
-        List<String> ipList = serverMap.get(serveiceName);
-        int size = serverMap.get(serveiceName).size();
+        List<String> ipList = new ArrayList<>();
+        ipList.addAll(serverMap.get(serveiceName));
+        int size = ipList.size();
         if (size > 0) {
             if (size == 1) {
                 data = ipList.get(0);
@@ -62,8 +60,9 @@ public class ServiceDiscovery {
                     useCount.put(serveiceName, 0);
                 }
                 data = ipList.get(useCount.get(serveiceName) % ipList.size() );
+
+                LOGGER.info("using lunxun server: {} ，count：{}", data, useCount.get(serveiceName) % ipList.size());
                 useCount.put(serveiceName, useCount.get(serveiceName) + 1);
-                LOGGER.info("using lunxun server: {}", data);
             }
         }
         return data;
@@ -94,6 +93,7 @@ public class ServiceDiscovery {
                 }
             });
 //            List<String> dataList = new ArrayList<>();
+
             for (String node : nodeList) {
                 LOGGER.info("node : {}", node);
                 byte[] bytes = zk.getData(Constant.ZK_REGISTRY_PATH + "/" + node, false, null);
@@ -101,7 +101,7 @@ public class ServiceDiscovery {
                 String serviceKey = data.split("&")[1];
                 String serviceIp = data.split("&")[2];
                 if (!serverMap.containsKey(serviceKey)){
-                    serverMap.put(serviceKey, new ArrayList<>());
+                    serverMap.put(serviceKey, new TreeSet<>());
                 }
                 serverMap.get(serviceKey).add(serviceIp);
 //                dataList.add(new String(bytes));
