@@ -12,13 +12,17 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.concurrent.*;
+
 
 public class RpcClient extends SimpleChannelInboundHandler<RpcResponse> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RpcClient.class);
 
+    @Value("${timeout}")
+    private Long timeout;
 
     final ExecutorService exec = Executors.newFixedThreadPool(1);
 
@@ -56,7 +60,7 @@ public class RpcClient extends SimpleChannelInboundHandler<RpcResponse> {
         try {
             Future<String> future1 = exec.submit(call);
             //任务处理超时时间设为 1 秒
-            String obj = future1.get(1000 * 1, TimeUnit.MILLISECONDS);
+            String obj = future1.get(1000, TimeUnit.MILLISECONDS);
 
             return response;
         } catch (TimeoutException e){

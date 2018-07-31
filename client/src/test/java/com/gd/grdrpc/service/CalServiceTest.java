@@ -1,15 +1,12 @@
 package com.gd.grdrpc.service;
 
 import com.gd.grdrpc.client.RpcProxy;
+import com.gd.grdrpc.discovery.ServiceDiscovery;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.Date;
-
-import static org.junit.Assert.*;
 
 /**
  * @Author by guanda
@@ -22,13 +19,15 @@ public class CalServiceTest {
     @Autowired
     private RpcProxy rpcProxy;
 
+//    @Autowired
+//    private ServiceDiscovery serviceDiscovery;
 
     @Test
     public void add() throws Exception {
-
+//        RpcProxy rpcProxy = new RpcProxy("gd-Cal",serviceDiscovery);
         long start = System.currentTimeMillis();
         CalService calService = rpcProxy.create(CalService.class);
-        for (int i = 0;i < 1000; i++){
+        for (int i = 0;i < 10; i++){
 
             Object result = calService.add(1,2);
             if (result.equals(new Integer(0))){

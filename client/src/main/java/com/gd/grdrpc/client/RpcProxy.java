@@ -20,10 +20,19 @@ public class RpcProxy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RpcProxy.class);
 
+    private String serviceName;
+
     private String serverAddress;
 
     @Autowired
     private ServiceDiscovery serviceDiscovery;
+
+//    public RpcProxy(String serviceName, ServiceDiscovery serviceDiscovery){
+//        this.serviceName = serviceName;
+//        this.serviceDiscovery = serviceDiscovery;
+//    }
+
+
 
     @SuppressWarnings("unchecked")
     public <T> T create(Class<?> interfaceClass) {
@@ -41,7 +50,8 @@ public class RpcProxy {
 
                     if (serviceDiscovery != null) {
                         // 发现服务
-                        serverAddress = serviceDiscovery.discover();
+                        LOGGER.info(method.getDeclaringClass().getName());
+                        serverAddress = serviceDiscovery.discover(method.getDeclaringClass().getName());
                     }
 
                     String[] array = serverAddress.split(":");

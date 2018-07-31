@@ -2,7 +2,6 @@ package com.gd.grdrpc.discovery;
 
 import com.gd.grdrpc.constant.Constant;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
@@ -12,7 +11,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -30,6 +32,10 @@ public class ServiceDiscovery {
 
     private volatile List<String> dataList = new ArrayList<>();
 
+    private Map<String, List<String>> serverMap = new HashMap<>();
+
+    private Map<String, Integer> useCount = new ConcurrentHashMap<>();
+
     public ServiceDiscovery(@Value(("${zookeeper.address}")) String registryAddress) {
         ZooKeeper zk = connectServer(registryAddress);
         if (zk != null) {
@@ -38,16 +44,26 @@ public class ServiceDiscovery {
     }
 
 
-    public String discover() {
-        String data = null;
-        int size = dataList.size();
+    public String discover(String serveiceName) {
+        String data = "";
+        List<String> ipList = serverMap.get(serveiceName);
+        int size = serverMap.get(serveiceName).size();
         if (size > 0) {
             if (size == 1) {
-                data = dataList.get(0);
-                LOGGER.debug("using only data: {}", data);
+                data = ipList.get(0);
+                LOGGER.info("using only server: {}", data);
             } else {
-                data = dataList.get(ThreadLocalRandom.current().nextInt(size));
-                LOGGER.debug("using random data: {}", data);
+
+                //todo 负载均衡策略的加载
+//                data = ipList.get(ThreadLocalRandom.current().nextInt(size));
+//                LOGGER.info("using random server: {}", data);
+
+                if (! useCount.containsKey(serveiceName)){
+                    useCount.put(serveiceName, 0);
+                }
+                data = ipList.get(useCount.get(serveiceName) % ipList.size() );
+                useCount.put(serveiceName, useCount.get(serveiceName) + 1);
+                LOGGER.info("using lunxun server: {}", data);
             }
         }
         return data;
@@ -77,11 +93,18 @@ public class ServiceDiscovery {
                     watchNode(zk);
                 }
             });
-            List<String> dataList = new ArrayList<>();
+//            List<String> dataList = new ArrayList<>();
             for (String node : nodeList) {
                 LOGGER.info("node : {}", node);
                 byte[] bytes = zk.getData(Constant.ZK_REGISTRY_PATH + "/" + node, false, null);
-                dataList.add(new String(bytes));
+                String data = new String(bytes);
+                String serviceKey = data.split("&")[1];
+                String serviceIp = data.split("&")[2];
+                if (!serverMap.containsKey(serviceKey)){
+                    serverMap.put(serviceKey, new ArrayList<>());
+                }
+                serverMap.get(serviceKey).add(serviceIp);
+//                dataList.add(new String(bytes));
             }
             LOGGER.info("node data: {}", dataList);
             this.dataList = dataList;
