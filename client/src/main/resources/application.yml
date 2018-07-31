@@ -1,8 +1,11 @@
 server:
-  port: 8089
+  port: 8099
 
 zookeeper:
   address: 127.0.0.1:2181
+
+comsumer:
+  load-balance-type: Poll
 
 
 

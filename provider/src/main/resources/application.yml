@@ -1,11 +1,11 @@
 server:
-  port: 8089
+  port: 8096
   servlet:
     path:
 
 provider:
   host: 127.0.0.1
-  port: 8889
+  port: 8896
   name: gd-Cal
 
 zookeeper:
