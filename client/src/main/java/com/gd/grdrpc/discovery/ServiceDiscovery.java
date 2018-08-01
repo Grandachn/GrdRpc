@@ -1,6 +1,8 @@
 package com.gd.grdrpc.discovery;
 
 import com.gd.grdrpc.constant.Constant;
+import com.gd.grdrpc.loadbalance.LoadBalanceType;
+import com.gd.grdrpc.loadbalance.RandomLoadBalance;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -33,12 +35,26 @@ public class ServiceDiscovery {
 
     private Map<String, Integer> useCount = new ConcurrentHashMap<>();
 
-    public ServiceDiscovery(@Value(("${zookeeper.address}")) String registryAddress) {
-        ZooKeeper zk = connectServer(registryAddress);
-        if (zk != null) {
-            watchNode(zk);
+    private LoadBalanceType loadBalanceType;
+
+        public ServiceDiscovery(@Value(("${zookeeper.address}")) String registryAddress,
+                                @Value(("${comsumer.load-balance-type}"))String loadBalanceType) {
+            ZooKeeper zk = connectServer(registryAddress);
+            if (zk != null) {
+                watchNode(zk);
+            }
+
+            try {
+                this.loadBalanceType = (LoadBalanceType) Class.forName("com.gd.grdrpc.loadbalance." + loadBalanceType + "LoadBalance").newInstance();
+                LOGGER.info("comsumer.load-balance-type use : [" + loadBalanceType + "]");
+            } catch (Exception e) {
+                LOGGER.error("comsumer.load-balance-type : [" + loadBalanceType + "] is not supported");
+                LOGGER.info("comsumer.load-balance-type use [Random] instead");
+            }finally {
+                //默认使用随机算法
+                this.loadBalanceType = new RandomLoadBalance();
+            }
         }
-    }
 
 
     public String discover(String serveiceName) {
@@ -51,18 +67,9 @@ public class ServiceDiscovery {
                 data = ipList.get(0);
                 LOGGER.info("using only server: {}", data);
             } else {
-
-                //todo 负载均衡策略的加载
-//                data = ipList.get(ThreadLocalRandom.current().nextInt(size));
-//                LOGGER.info("using random server: {}", data);
-
-                if (! useCount.containsKey(serveiceName)){
-                    useCount.put(serveiceName, 0);
-                }
-                data = ipList.get(useCount.get(serveiceName) % ipList.size() );
-
-                LOGGER.info("using lunxun server: {} ，count：{}", data, useCount.get(serveiceName) % ipList.size());
-                useCount.put(serveiceName, useCount.get(serveiceName) + 1);
+                // 负载均衡策略的加载
+                data = loadBalanceType.choiceHost(ipList, useCount, serveiceName);
+                LOGGER.info("using  server: {} ，count：{}", data);
             }
         }
         return data;
