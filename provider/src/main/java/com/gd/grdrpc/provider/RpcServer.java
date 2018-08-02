@@ -91,10 +91,7 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
 
             // 注册服务地址
             if (serviceRegistry != null) {
-                //todo jiukoumzi
-                handlerMap.keySet().forEach(interfaceName -> {
-                    serviceRegistry.register(serviceName + "&" + interfaceName + "&" +NetworkUtil.getLocalHostLANAddress().getHostAddress() + ":" + port);
-                });
+                handlerMap.keySet().forEach(interfaceName -> serviceRegistry.register(serviceName + "&" + interfaceName + "&" +NetworkUtil.getLocalHostLANAddress().getHostAddress() + ":" + port));
 
                 LOGGER.info("服务成功注册到zookeeper");
             }
